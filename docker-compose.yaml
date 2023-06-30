@@ -1,0 +1,73 @@
+version: "3.8"
+services:
+  phpmyadmin:
+    container_name: PHPMyAdmin
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 8000:80
+    networks:
+      - precooked_dev_network
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=pc_db
+
+  pc_app:
+    container_name: PC_Application
+    restart: always
+    build:
+      context: .
+      dockerfile: ./docker/development/php/Dockerfile
+    expose:
+      - 9000
+      - 5173
+    volumes:
+      - .:/usr/src/app
+      - ./public:/usr/src/app/public
+    depends_on:
+      - pc_db
+    networks:
+      - precooked_dev_network
+
+  pc_nginx:
+    container_name: PC_Nginx
+    restart: always
+    build:
+      context: .
+      dockerfile: ./docker/development/nginx/Dockerfile
+    volumes:
+      - ./public:/usr/src/app/public
+      - ./storage/nginx-logs:/var/log/nginx
+      - ./storage/ssl:/var/ssl
+    ports:
+      - 80:80
+      - 443:443
+      - 5173:5173
+    depends_on:
+      - pc_app
+    environment:
+      NGINX_FPM_HOST: pc_app
+      NGINX_ROOT: /usr/src/app/public
+    networks:
+      - precooked_dev_network
+
+  pc_db:
+    container_name: PC_Database
+    image: mysql:8.0.28
+    restart: always
+    volumes:
+      - ./storage/db-dumps:/usr/src
+      - ./storage/db-data:/var/lib/mysql
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: precooked
+      MYSQL_ROOT_PASSWORD: testing
+      MYSQL_USER: precooked
+      MYSQL_PASSWORD: password
+    networks:
+      - precooked_dev_network
+
+networks:
+  precooked_dev_network:
+    driver: bridge

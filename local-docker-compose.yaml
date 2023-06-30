@@ -1,0 +1,33 @@
+version: "3.8"
+services:
+  phpmyadmin:
+    container_name: PHPMyAdmin
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 8080:80
+    networks:
+      - precooked_dev_network
+    links:
+      - "pc_db:db"
+
+  pc_db:
+    container_name: PC_Database
+    image: mysql:8.0.28
+    restart: always
+    volumes:
+      - ./storage/db-dumps:/usr/src
+      - ./storage/db-data:/var/lib/mysql
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: testing
+      MYSQL_USER: precooked
+      MYSQL_PASSWORD: password
+    networks:
+      - precooked_dev_network
+
+networks:
+  precooked_dev_network:
+    driver: bridge
